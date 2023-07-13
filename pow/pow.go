@@ -1,4 +1,3 @@
-// proof of work
 package main
 
 import (
@@ -13,7 +12,15 @@ import (
 	"time"
 )
 
-// 24 指的是计算出来的哈希前 24 位必须是 0
+// proof of work：工作量证明机制，通过预先设定一个难度 targetBits，例如本段代码设置的 24，
+// 当比特币网络节点对数据进行sha256加密得到一个哈希值，数据包括：
+// 1. 区块头：区块的头部信息，包括版本号、前一区块的哈希值、Merkle 根、时间戳和难度目标
+// 2. Nonce：挖矿者通过不断更改 Nonce的值，重新计算区块头的哈希，直到找到符合挖矿难度要求的哈希值
+// 3. 时间戳：挖矿操作开始的时间
+// 4. merkle 根：吧区块内所有的交易打包进行哈希
+// 5. 难度目标：例如：targetBits 为 24，难度目标就是 1 << 2^(256-24)，判断哈希值是否有效，就看得到的哈希值是否前 24 位为0（也就是小于难度目标）
+
+// 24 指的是计算出来的哈希值前 24 位必须是 0
 const targetBits = 24
 const maxNonce = math.MaxInt64
 
@@ -87,7 +94,7 @@ func (p *ProofOfWork) prepareData(nonce int) []byte {
 	return data
 }
 
-// Run 寻找有效哈希
+// Run 寻找有效哈希，也就是挖矿的过程
 func (p *ProofOfWork) Run() (int, []byte) {
 	var hashInt big.Int
 	// sha256 生成 256 位的二进制哈希值，一个字节等于 8 比特，所以用 32 字节
@@ -96,7 +103,8 @@ func (p *ProofOfWork) Run() (int, []byte) {
 	fmt.Printf("Mining the block containing \"%s\"\n", p.block.Data)
 	for nonce < maxNonce {
 		data := p.prepareData(nonce)
-		hash := sha256.Sum256(data)
+		hash = sha256.Sum256(data)
+		// 将字节数组转为 big.Int
 		hashInt.SetBytes(hash[:])
 		if hashInt.Cmp(p.target) == -1 {
 			// 如果 hashInt 小于 p.target
@@ -111,16 +119,16 @@ func (p *ProofOfWork) Run() (int, []byte) {
 	return nonce, hash[:]
 }
 
-// Validate 证明工作量
+// Validate 证明工作量，只要得到的哈希小于 target 就有效
 func (p *ProofOfWork) Validate() bool {
 	var hashInt big.Int
 	data := p.prepareData(p.block.Nonce)
 	hash := sha256.Sum256(data)
 	hashInt.SetBytes(hash[:])
-	return hashInt.Cmp(p.target) == 1
+	return hashInt.Cmp(p.target) == -1
 }
 
-// IntToHex 将 int64 转为字节数组，将字节数组转为 int64 的方法是 big 包中的 SetBytes
+// IntToHex 将 int64 转为字节数组
 func IntToHex(num int64) []byte {
 	buff := &bytes.Buffer{}
 	err := binary.Write(buff, binary.BigEndian, num)
