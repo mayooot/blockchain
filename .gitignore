@@ -1,0 +1,17 @@
+# Compiled executables
+*.exe
+*.out
+
+# Dependency directories
+.idea/
+
+# Output directories
+/bin/
+/pkg/
+
+# IDE specific files
+.vscode/
+
+# Mac OS X specific files
+.DS_Store
+
